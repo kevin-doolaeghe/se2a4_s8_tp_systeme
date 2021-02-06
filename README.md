@@ -4,6 +4,4 @@
 
 Thomas Vantroys
 
-thomas.vantroys@polytech-lille.fr
-
-https://tvantroys.plil.fr/
+thomas.vantroys@polytech-lille.fr - https://tvantroys.plil.fr/
