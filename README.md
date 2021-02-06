@@ -1,6 +1,6 @@
 # Polytech SE2A4 Semestre 8 - TP Système
 
-## Auteur des documents de cours
+## Auteur des supports de cours
 
 ### Thomas Vantroys
 
