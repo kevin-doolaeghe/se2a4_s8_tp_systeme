@@ -4,24 +4,53 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <fcntl.h>
 
 struct sigaction action;
 
-struct data_s {
-    float a;
-    float b;
+int pipefd1[2], pipefd2[2], pipefd3[2];
+
+struct data_t {
+    int a;
+    int b;
+    int *pipefd;
 };
 
-void *operation(void *arg) {
+void *operation1(void *arg) {
     int status;
 
-    int a = ((int *) arg)[0];
-    int b = ((int *) arg)[1];
-    
+    struct data_t *data = (struct data_t *) arg;
+    int *pipefd = (*data).pipefd;
+    int a = (*data).a;
+    int b = (*data).b;
+
+    // close(pipefd[0]);
+
     srand(time(NULL));
     int nb = rand() % 11;
     
-    status = a + b + nb;
+    int res = a + b + nb;
+
+    write(pipefd[1], &res, sizeof(res));
+
+    pthread_exit((void *)&status);
+}
+
+void *operation2(void *arg) {
+    int status;
+
+    // close(pipefd1[1]);
+    // close(pipefd2[1]);
+    // close(pipefd3[1]);
+
+    int nb1, nb2, nb3;
+
+    read(pipefd1[0], &nb1, sizeof(nb1));
+    read(pipefd2[0], &nb2, sizeof(nb2));
+    read(pipefd3[0], &nb3, sizeof(nb3));
+
+    int res = nb1 + nb2 + nb3;
+    printf("Result: %d\n", res);
 
     pthread_exit((void *)&status);
 }
@@ -29,6 +58,12 @@ void *operation(void *arg) {
 void handler(int signal) {
         if (signal == SIGINT){
             printf("SIGINT detected\n");
+            
+            pthread_t tid4;
+            pthread_create(&tid4, NULL, operation2, NULL);
+
+            pthread_join(tid4, NULL);
+            
             exit(SIGINT);
         } else {
                 // Si erreur
@@ -38,25 +73,42 @@ void handler(int signal) {
 }
 
 int main() {
-    struct data_s data;
+    struct data_t data1, data2, data3;
 
     // Fonction appelée par le signal
     action.sa_handler = handler;
     // Action sur réception SIGINT
     sigaction(SIGINT, &action, NULL);
 
-    while (1) {
-        printf("Enter nb a :");
-        scanf("%f", &(data.a));
+    if (pipe(pipefd1) != 0) { perror("pipe creation failed!"); return 1; }
+    if (pipe(pipefd2) != 0) { perror("pipe creation failed!"); return 1; }
+    if (pipe(pipefd3) != 0) { perror("pipe creation failed!"); return 1; }
 
-        printf("Enter nb b :");
-        scanf("%f", &(data.b));
+    data1.a = 4;
+    data1.b = 7;
+    data1.pipefd = pipefd1;
     
-        printf("Enter operation (0=plus; 1=mult) :");
-        scanf("%d", (int *) &(data.op));
+    data2.a = 5;
+    data2.b = 1;
+    data2.pipefd = pipefd2;
     
-        pthread_t tid1;
-        pthread_create(&tid1, NULL, operation, (void *) &data); 
-        pthread_join(tid1, NULL);
-    }
+    data3.a = 2;
+    data3.b = 3;
+    data3.pipefd = pipefd3;
+
+    pthread_t tid1;
+    pthread_create(&tid1, NULL, operation1, (void *) &data1); 
+
+    pthread_t tid2;
+    pthread_create(&tid2, NULL, operation1, (void *) &data2);
+
+    pthread_t tid3;
+    pthread_create(&tid3, NULL, operation1, (void *) &data3); 
+
+    pthread_join(tid1, NULL);
+    pthread_join(tid2, NULL);
+    pthread_join(tid3, NULL);
+
+    pause();
+    return 1;
 }
