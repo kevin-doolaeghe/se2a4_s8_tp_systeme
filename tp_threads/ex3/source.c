@@ -16,6 +16,8 @@ struct data_t {
     int *pipefd;
 };
 
+struct data_t data1, data2, data3;
+
 void *operation1(void *arg) {
     int status;
 
@@ -24,8 +26,6 @@ void *operation1(void *arg) {
     int a = (*data).a;
     int b = (*data).b;
 
-    // close(pipefd[0]);
-
     srand(time(NULL));
     int nb = rand() % 11;
     
@@ -33,15 +33,13 @@ void *operation1(void *arg) {
 
     write(pipefd[1], &res, sizeof(res));
 
+    close(pipefd[1]);
+    
     pthread_exit((void *)&status);
 }
 
 void *operation2(void *arg) {
     int status;
-
-    // close(pipefd1[1]);
-    // close(pipefd2[1]);
-    // close(pipefd3[1]);
 
     int nb1, nb2, nb3;
 
@@ -51,6 +49,10 @@ void *operation2(void *arg) {
 
     int res = nb1 + nb2 + nb3;
     printf("Result: %d\n", res);
+
+    close(pipefd1[0]);
+    close(pipefd2[0]);
+    close(pipefd3[0]);
 
     pthread_exit((void *)&status);
 }
@@ -73,13 +75,6 @@ void handler(int signal) {
 }
 
 int main() {
-    struct data_t data1, data2, data3;
-
-    // Fonction appelée par le signal
-    action.sa_handler = handler;
-    // Action sur réception SIGINT
-    sigaction(SIGINT, &action, NULL);
-
     if (pipe(pipefd1) != 0) { perror("pipe creation failed!"); return 1; }
     if (pipe(pipefd2) != 0) { perror("pipe creation failed!"); return 1; }
     if (pipe(pipefd3) != 0) { perror("pipe creation failed!"); return 1; }
@@ -108,6 +103,11 @@ int main() {
     pthread_join(tid1, NULL);
     pthread_join(tid2, NULL);
     pthread_join(tid3, NULL);
+
+    // Fonction appelée par le signal
+    action.sa_handler = handler;
+    // Action sur réception SIGINT
+    sigaction(SIGINT, &action, NULL);
 
     pause();
     return 1;
