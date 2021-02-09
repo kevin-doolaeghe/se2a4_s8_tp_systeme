@@ -30,39 +30,48 @@ int main() {
     int nb1, nb2, op;
     
     printf("Addition = 0 | Multiplication = 1\n");
-    printf("Entrer une opération :");
+    printf("Entrer une opération : ");
     scanf("%d", &op);
     
-    printf("Entrer un premier nombre :");
+    printf("Entrer un premier nombre : ");
     scanf("%d", &nb1);
     
-    printf("Entrer un second nombre :");
+    printf("Entrer un second nombre : ");
     scanf("%d", &nb2);
 
-    char str[TAILLE_MSG];
-   
-    strcat(str, (char)(nb1 >> 24) & 0xFF);
-    strcat(str, (char)(nb1 >> 16) & 0xFF);
-    strcat(str, (char)(nb1 >> 8) & 0xFF);
-    strcat(str, (char)nb1 & 0xFF);
-    strcat(str, ",");
-    strcat(str, (char)(nb2 >> 24) & 0xFF);
-    strcat(str, (char)(nb2 >> 16) & 0xFF);
-    strcat(str, (char)(nb2 >> 8) & 0xFF);
-    strcat(str, (char)nb2 & 0xFF);
-    
-    strcpy(message.texte, str);
-    
+    int i, j;
+
+    for (i = 0; i < TAILLE_MSG; i++)
+        message.texte[i] = 0;
+
+    for (i = 3; i >= 0; i--) {
+        message.texte[3 - i] = (nb1 >> (8 * i)) & 0xFF;
+        message.texte[7 - i] = (nb2 >> (8 * i)) & 0xFF;
+    }
+
+    printf("Contenu du message bits par bits :\n");
+    for (i = 0; i < TAILLE_MSG; i++) {
+        for (j = 0; j < 8; j++) {
+            if (((message.texte[i] >> (7 - j)) & 0x01) == 0)
+                printf("0");
+            else
+                printf("1");
+        }
+        printf("\n");
+    }
+
     switch (op) {
     case 0:
         message.type = 10;
+        break;
     case 1:
         message.type = 20;
+        break;
     }
 
     msgsnd(msgid, &message, TAILLE_MSG, 0);
 
-    msgrcv(msgid, &message, TAILLE_MSG, 2, 0);
+    msgrcv(msgid, &message, TAILLE_MSG, 30, 0);
 
     printf("Réponse : %s\n", message.texte);
 
